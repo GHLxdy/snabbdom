@@ -344,7 +344,9 @@ export function init(modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         cbs.update[i](oldVnode, vnode);
       vnode.data.hook?.update?.(oldVnode, vnode);
     }
+    // 如果text是undefined => 有 children
     if (isUndef(vnode.text)) {
+      // 新旧节点都有 children && 新旧children不相同 => updateChildren
       if (isDef(oldCh) && isDef(ch)) {
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue);
       } else if (isDef(ch)) {
@@ -356,9 +358,11 @@ export function init(modules: Array<Partial<Module>>, domApi?: DOMAPI) {
         api.setTextContent(elm, "");
       }
     } else if (oldVnode.text !== vnode.text) {
+      // 移除所有子节点
       if (isDef(oldCh)) {
         removeVnodes(elm, oldCh, 0, oldCh.length - 1);
       }
+      // 修改节点文本
       api.setTextContent(elm, vnode.text!);
     }
     hook?.postpatch?.(oldVnode, vnode);
@@ -369,18 +373,22 @@ export function init(modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     const insertedVnodeQueue: VNodeQueue = [];
     for (i = 0; i < cbs.pre.length; ++i) cbs.pre[i]();
 
+    // 如果旧节点是不是vnode,则创建一个vnode
     if (!isVnode(oldVnode)) {
       oldVnode = emptyNodeAt(oldVnode);
     }
 
+    // oldVnode和vnode是同一个vnode=>pathcVnode
     if (sameVnode(oldVnode, vnode)) {
       patchVnode(oldVnode, vnode, insertedVnodeQueue);
     } else {
       elm = oldVnode.elm!;
       parent = api.parentNode(elm) as Node;
 
+      // vnode=>转化成真实dom
       createElm(vnode, insertedVnodeQueue);
 
+      // 替换新旧节点
       if (parent !== null) {
         api.insertBefore(parent, vnode.elm!, api.nextSibling(elm));
         removeVnodes(parent, [oldVnode], 0, 0);
